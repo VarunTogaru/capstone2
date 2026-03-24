@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nmap Insight Demo</title>
+  <style>
+    :root {
+      --bg: #f5f7ef;
+      --card: #ffffff;
+      --ink: #1e2a1f;
+      --muted: #50644f;
+      --accent: #18624b;
+      --accent-soft: #d5f1e7;
+      --warn: #912a2a;
+      --line: #dce5d8;
+      --shadow: 0 20px 38px -28px rgba(19, 61, 36, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Trebuchet MS", "Gill Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% -10%, #d8ead4 0%, transparent 35%),
+        radial-gradient(circle at 85% 0%, #d5e9ff 0%, transparent 32%),
+        var(--bg);
+      min-height: 100vh;
+      padding: 28px 18px 48px;
+      overflow-x: hidden;
+    }
+
+    .shell {
+      max-width: 1020px;
+      margin: 0 auto;
+      animation: fade-up 260ms ease-out;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header {
+      margin-bottom: 18px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(1.65rem, 2.4vw, 2.1rem);
+      letter-spacing: 0.01em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 330px) minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.06rem;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid #bfd0bf;
+      background: #fbfefb;
+      border-radius: 10px;
+      padding: 10px 11px;
+      font: inherit;
+      color: var(--ink);
+    }
+
+    fieldset {
+      border: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    legend {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .hint {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    .option-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #bfd0bf;
+      background: #fbfefb;
+      border-radius: 10px;
+      padding: 9px 10px;
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+
+    .option-card input {
+      width: auto;
+      margin: 0;
+    }
+
+    .option-card strong {
+      display: block;
+      font-size: 0.88rem;
+      line-height: 1.2;
+    }
+
+    .option-card span {
+      display: block;
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #bfd0bf;
+      background: #fbfefb;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      margin-bottom: 0;
+      font-size: 0.83rem;
+      font-weight: 600;
+    }
+
+    .check-item input {
+      width: auto;
+      margin: 0;
+    }
+
+    .check-item code {
+      background: #edf5ee;
+      border: 1px solid #d2e4d6;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+    }
+
+    .flag-entry {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .flag-value {
+      display: block;
+      margin-left: 32px;
+      width: calc(100% - 32px);
+      font-size: 0.8rem;
+      padding: 8px 9px;
+    }
+
+    .flag-value[hidden] {
+      display: none;
+    }
+
+    .toggle-more {
+      width: 100%;
+      margin-top: 8px;
+      background: #eef4ef;
+      color: #244536;
+      border: 1px solid #c6d7c8;
+    }
+
+    .flag-library {
+      margin-top: 9px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fbf8;
+      padding: 9px;
+      max-height: 280px;
+      overflow: auto;
+    }
+
+    .flag-sections {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    .flag-section {
+      border: 1px solid #d7e3d6;
+      border-radius: 10px;
+      background: #fff;
+      padding: 7px;
+    }
+
+    .flag-section summary {
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #2b4e39;
+      margin-bottom: 6px;
+    }
+
+    .selected-details {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fbfefb;
+      padding: 9px;
+      min-height: 54px;
+      max-height: 160px;
+      overflow: auto;
+    }
+
+    .selected-flag {
+      border-left: 3px solid #b7d8bf;
+      padding: 6px 8px;
+      margin-bottom: 6px;
+      background: #f6fbf7;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+
+    .selected-flag:last-child {
+      margin-bottom: 0;
+    }
+
+    .selected-flag.missing {
+      border-left-color: #d57b7b;
+      background: #fff4f4;
+    }
+
+    .selected-flag code {
+      background: #edf5ee;
+      border: 1px solid #d2e4d6;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      margin-right: 4px;
+    }
+
+    .selected-empty {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .run {
+      background: var(--accent);
+      color: #fff;
+      flex: 1;
+    }
+
+    .clear {
+      background: #e6eee8;
+      color: #2f4536;
+    }
+
+    .status {
+      margin: 10px 0 0;
+      padding: 10px;
+      border-radius: 10px;
+      background: #edf5ee;
+      color: #21402f;
+      font-size: 0.88rem;
+      min-height: 40px;
+    }
+
+    .status.error {
+      background: #fdeced;
+      color: var(--warn);
+    }
+
+    .chip {
+      background: var(--accent-soft);
+      border: 1px dashed #9fd7c4;
+      border-radius: 10px;
+      margin-top: 12px;
+      padding: 9px 10px;
+      font-size: 0.83rem;
+      color: #255847;
+      word-break: break-word;
+    }
+
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 11px;
+      border-bottom: 1px solid #edf1eb;
+    }
+
+    th {
+      background: #f4f8f3;
+      color: #38553e;
+      font-weight: 700;
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .raw {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #0d1f16;
+      color: #d6f0dc;
+      padding: 12px;
+      max-height: 280px;
+      overflow: auto;
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .meta-grid {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .meta-item {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #f9fcf9;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      min-width: 0;
+    }
+
+    .meta-item strong {
+      display: block;
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .meta-value {
+      display: block;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .meta-wide {
+      grid-column: 1 / -1;
+      max-height: 120px;
+      overflow: auto;
+    }
+
+    .detail-wrap {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px;
+      max-height: 320px;
+      overflow: auto;
+    }
+
+    .host-card {
+      border: 1px solid #d9e5da;
+      border-radius: 10px;
+      background: #fafffb;
+      padding: 9px 10px;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
+
+    .host-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .host-title {
+      font-weight: 700;
+      font-size: 0.86rem;
+      margin-bottom: 6px;
+    }
+
+    .mini-row {
+      margin-bottom: 5px;
+      color: #2f4635;
+      overflow-wrap: anywhere;
+    }
+
+    .mini-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .pill {
+      border: 1px solid #cfe1d1;
+      background: #eef7f0;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.74rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <h1 class="title">Nmap Insight</h1>
+    </header>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Run Scan</h2>
+        <form id="scan-form">
+          <div class="field">
+            <label for="target">Target</label>
+            <input id="target" name="target" placeholder="scanme.nmap.org" required>
+          </div>
+
+          <fieldset class="field">
+            <legend>Scan Type</legend>
+            <div class="option-grid">
+              <label class="option-card" title="TCP connect scan (-sT). Reliable without root privileges.">
+                <input type="radio" name="scan_type" value="tcp" checked>
+                <div>
+                  <strong>tcp</strong>
+                  <span>Connect scan without root.</span>
+                </div>
+              </label>
+              <label class="option-card" title="SYN scan (-sS). Faster stealthier scan, often needs elevated privileges.">
+                <input type="radio" name="scan_type" value="syn">
+                <div>
+                  <strong>syn</strong>
+                  <span>SYN scan, may require elevated rights.</span>
+                </div>
+              </label>
+              <label class="option-card" title="Version scan (-sV). Probes open ports to identify service versions.">
+                <input type="radio" name="scan_type" value="version">
+                <div>
+                  <strong>version</strong>
+                  <span>Detect service versions.</span>
+                </div>
+              </label>
+              <label class="option-card" title="Custom mode sets no default scan flag. Use optional args only.">
+                <input type="radio" name="scan_type" value="custom">
+                <div>
+                  <strong>custom</strong>
+                  <span>No default scan flag added.</span>
+                </div>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label class="check-item">
+              <input id="use-privileged" name="use_privileged" type="checkbox" checked>
+              <code>Advanced</code> Use privileged helper mode
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="ports">Ports (optional)</label>
+            <input id="ports" name="ports" placeholder="22,80,443 or 1-1024">
+          </div>
+
+          <fieldset class="field">
+            <legend>Beginner Flags (Top 5)</legend>
+            <div id="beginner-flags" class="check-grid"></div>
+            <button type="button" id="toggle-more-flags" class="toggle-more">Others (All Flags)</button>
+            <div id="all-flags-panel" class="flag-library" hidden>
+              <div id="all-flag-sections" class="flag-sections"></div>
+            </div>
+            <div class="hint">Descriptions appear below only after selection.</div>
+          </fieldset>
+
+          <div class="field">
+            <label for="extra-args">Custom Extra Args (optional)</label>
+            <input id="extra-args" name="extra_args" placeholder="--script vuln">
+            <div class="hint">Optional free-form flags, space-separated.</div>
+          </div>
+
+          <div class="field">
+            <label for="selected-flag-details">Selected Flag Details</label>
+            <div id="selected-flag-details" class="selected-details">
+              <div class="selected-empty">No flags selected yet.</div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="run" type="submit" id="run-btn">Run Scan</button>
+            <button class="clear" type="button" id="clear-btn">Clear</button>
+          </div>
+        </form>
+
+        <div id="status" class="status">Ready.</div>
+        <div id="command-chip" class="chip">Command preview: nmap -oX - &lt;target&gt;</div>
+      </article>
+
+      <article class="panel">
+        <h2>Results</h2>
+        <p class="section-title">Parsed host/port output</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Address</th>
+                <th>Port</th>
+                <th>Proto</th>
+                <th>State</th>
+                <th>Service</th>
+              </tr>
+            </thead>
+            <tbody id="result-body">
+              <tr>
+                <td colspan="5">No scan results yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="section-title" style="margin-top:12px;">Scan Metadata</p>
+        <div id="scan-meta" class="meta-grid">
+          <div class="meta-item"><strong>Status</strong>Waiting for first scan.</div>
+        </div>
+
+        <p class="section-title" style="margin-top:12px;">Detection Details</p>
+        <div id="detection-body" class="detail-wrap">No detection details yet.</div>
+
+        <p class="section-title" style="margin-top:12px;">Raw JSON</p>
+        <pre id="raw-json" class="raw">{}</pre>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("scan-form");
+    const statusBox = document.getElementById("status");
+    const commandChip = document.getElementById("command-chip");
+    const rawJson = document.getElementById("raw-json");
+    const resultBody = document.getElementById("result-body");
+    const scanMeta = document.getElementById("scan-meta");
+    const detectionBody = document.getElementById("detection-body");
+    const runBtn = document.getElementById("run-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const beginnerFlagsNode = document.getElementById("beginner-flags");
+    const allFlagsPanel = document.getElementById("all-flags-panel");
+    const allFlagSectionsNode = document.getElementById("all-flag-sections");
+    const toggleMoreFlagsBtn = document.getElementById("toggle-more-flags");
+    const selectedFlagDetailsNode = document.getElementById("selected-flag-details");
+
+    const BEGINNER_FLAGS = ["-sV", "-Pn", "-n", "-T4", "--open"];
+
+    const FLAG_SECTIONS = [
+      {
+        name: "Target Specification",
+        items: [
+          { flag: "-iL", label: "Input list", description: "Input targets from a file.", requiresValue: true, placeholder: "targets.txt" },
+          { flag: "-iR", label: "Random targets", description: "Choose random targets.", requiresValue: true, placeholder: "100" },
+          { flag: "--exclude", label: "Exclude targets", description: "Exclude hosts or networks.", requiresValue: true, placeholder: "192.168.1.1,10.0.0.0/24" },
+          { flag: "--excludefile", label: "Exclude file", description: "Read excluded targets from file.", requiresValue: true, placeholder: "exclude.txt" },
+        ],
+      },
+      {
+        name: "Host Discovery",
+        items: [
+          { flag: "-sL", label: "List scan", description: "List targets without scanning ports." },
+          { flag: "-sn", label: "Ping scan", description: "Disable port scan and only discover hosts." },
+          { flag: "-Pn", label: "Skip discovery", description: "Treat all hosts as online." },
+          { flag: "-PS", label: "TCP SYN ping", description: "Send TCP SYN host discovery probes." },
+          { flag: "-PA", label: "TCP ACK ping", description: "Send TCP ACK host discovery probes." },
+          { flag: "-PU", label: "UDP ping", description: "Send UDP host discovery probes." },
+          { flag: "-PY", label: "SCTP ping", description: "Send SCTP host discovery probes." },
+          { flag: "-PE", label: "ICMP echo", description: "Send ICMP echo request probes." },
+          { flag: "-PP", label: "ICMP timestamp", description: "Send ICMP timestamp probes." },
+          { flag: "-PM", label: "ICMP netmask", description: "Send ICMP netmask probes." },
+          { flag: "-PO", label: "IP protocol ping", description: "Send IP protocol ping probes." },
+          { flag: "-n", label: "No DNS", description: "Disable reverse DNS resolution." },
+          { flag: "-R", label: "Always DNS", description: "Always resolve DNS for targets." },
+          { flag: "--dns-servers", label: "Custom DNS", description: "Set custom DNS resolver list.", requiresValue: true, placeholder: "8.8.8.8,1.1.1.1" },
+          { flag: "--system-dns", label: "System DNS", description: "Use operating system DNS resolver." },
+          { flag: "--traceroute", label: "Traceroute", description: "Trace hop path to each host." },
+        ],
+      },
+      {
+        name: "Scan Techniques",
+        items: [
+          { flag: "-sS", label: "SYN scan", description: "Run TCP SYN scan." },
+          { flag: "-sT", label: "TCP connect", description: "Run TCP connect scan." },
+          { flag: "-sA", label: "ACK scan", description: "Run TCP ACK scan." },
+          { flag: "-sW", label: "Window scan", description: "Run TCP window scan." },
+          { flag: "-sM", label: "Maimon scan", description: "Run TCP Maimon scan." },
+          { flag: "-sU", label: "UDP scan", description: "Run UDP scan." },
+          { flag: "-sN", label: "Null scan", description: "Run TCP null scan." },
+          { flag: "-sF", label: "FIN scan", description: "Run TCP FIN scan." },
+          { flag: "-sX", label: "Xmas scan", description: "Run TCP Xmas scan." },
+          { flag: "--scanflags", label: "Custom TCP flags", description: "Customize TCP scan flags.", requiresValue: true, placeholder: "URGACKPSHRSTSYNFIN" },
+          { flag: "-sI", label: "Idle scan", description: "Run idle zombie scan.", requiresValue: true, placeholder: "zombie.host:80" },
+          { flag: "-sY", label: "SCTP INIT", description: "Run SCTP INIT scan." },
+          { flag: "-sZ", label: "SCTP COOKIE", description: "Run SCTP COOKIE-ECHO scan." },
+          { flag: "-sO", label: "IP protocol scan", description: "Scan supported IP protocols." },
+          { flag: "-b", label: "FTP bounce", description: "Run FTP bounce scan.", requiresValue: true, placeholder: "ftp.relay.host" },
+        ],
+      },
+      {
+        name: "Port Specification",
+        items: [
+          { flag: "-p", label: "Port range", description: "Scan only selected ports.", requiresValue: true, placeholder: "22,80,443 or 1-1024" },
+          { flag: "--exclude-ports", label: "Exclude ports", description: "Exclude selected ports from scanning.", requiresValue: true, placeholder: "22,3389" },
+          { flag: "-F", label: "Fast ports", description: "Scan fewer common ports." },
+          { flag: "-r", label: "Sequential order", description: "Scan ports in sequential order." },
+          { flag: "--top-ports", label: "Top ports", description: "Scan the most common ports only.", requiresValue: true, placeholder: "100" },
+          { flag: "--port-ratio", label: "Port ratio", description: "Scan ports above a probability ratio.", requiresValue: true, placeholder: "0.01" },
+        ],
+      },
+      {
+        name: "Service and Version Detection",
+        items: [
+          { flag: "-sV", label: "Service detect", description: "Probe open ports for service and version info." },
+          { flag: "--version-intensity", label: "Version intensity", description: "Set version detection intensity level.", requiresValue: true, placeholder: "5" },
+          { flag: "--version-light", label: "Light probes", description: "Use light version probes only." },
+          { flag: "--version-all", label: "All probes", description: "Use all version probes." },
+          { flag: "--version-trace", label: "Version trace", description: "Trace version detection activity." },
+        ],
+      },
+      {
+        name: "Script Scan",
+        items: [
+          { flag: "-sC", label: "Default scripts", description: "Run default NSE script set." },
+          { flag: "--script", label: "Script selector", description: "Select NSE scripts or categories.", requiresValue: true, placeholder: "default,vuln" },
+          { flag: "--script-args", label: "Script args", description: "Provide NSE script arguments.", requiresValue: true, placeholder: "user=foo,pass=bar" },
+          { flag: "--script-args-file", label: "Script args file", description: "Load NSE script arguments from file.", requiresValue: true, placeholder: "script_args.txt" },
+          { flag: "--script-trace", label: "Script trace", description: "Trace script send/receive data." },
+          { flag: "--script-updatedb", label: "Update script DB", description: "Update NSE script database." },
+          { flag: "--script-help", label: "Script help", description: "Show help for scripts or categories.", requiresValue: true, placeholder: "http-title" },
+        ],
+      },
+      {
+        name: "OS Detection",
+        items: [
+          { flag: "-O", label: "OS detect", description: "Enable operating system detection." },
+          { flag: "--osscan-limit", label: "OS limit", description: "Limit OS detection to promising hosts." },
+          { flag: "--osscan-guess", label: "OS guess", description: "Guess OS aggressively when uncertain." },
+        ],
+      },
+      {
+        name: "Timing and Performance",
+        items: [
+          { flag: "-T0", label: "Paranoid timing", description: "Use timing template T0." },
+          { flag: "-T1", label: "Sneaky timing", description: "Use timing template T1." },
+          { flag: "-T2", label: "Polite timing", description: "Use timing template T2." },
+          { flag: "-T3", label: "Normal timing", description: "Use timing template T3." },
+          { flag: "-T4", label: "Aggressive timing", description: "Use timing template T4." },
+          { flag: "-T5", label: "Insane timing", description: "Use timing template T5." },
+          { flag: "--min-hostgroup", label: "Min hostgroup", description: "Set minimum hostgroup size.", requiresValue: true, placeholder: "64" },
+          { flag: "--max-hostgroup", label: "Max hostgroup", description: "Set maximum hostgroup size.", requiresValue: true, placeholder: "256" },
+          { flag: "--min-parallelism", label: "Min parallelism", description: "Set minimum probe parallelism.", requiresValue: true, placeholder: "10" },
+          { flag: "--max-parallelism", label: "Max parallelism", description: "Set maximum probe parallelism.", requiresValue: true, placeholder: "100" },
+          { flag: "--min-rtt-timeout", label: "Min RTT timeout", description: "Set minimum RTT timeout.", requiresValue: true, placeholder: "100ms" },
+          { flag: "--max-rtt-timeout", label: "Max RTT timeout", description: "Set maximum RTT timeout.", requiresValue: true, placeholder: "1s" },
+          { flag: "--initial-rtt-timeout", label: "Initial RTT timeout", description: "Set initial RTT timeout.", requiresValue: true, placeholder: "500ms" },
+          { flag: "--max-retries", label: "Max retries", description: "Set max port probe retries.", requiresValue: true, placeholder: "2" },
+          { flag: "--host-timeout", label: "Host timeout", description: "Give up on host after timeout.", requiresValue: true, placeholder: "30s" },
+          { flag: "--scan-delay", label: "Scan delay", description: "Delay between probes.", requiresValue: true, placeholder: "10ms" },
+          { flag: "--max-scan-delay", label: "Max scan delay", description: "Cap delay between probes.", requiresValue: true, placeholder: "1s" },
+          { flag: "--min-rate", label: "Min rate", description: "Set minimum packet rate.", requiresValue: true, placeholder: "100" },
+          { flag: "--max-rate", label: "Max rate", description: "Set maximum packet rate.", requiresValue: true, placeholder: "1000" },
+        ],
+      },
+      {
+        name: "Firewall, IDS Evasion and Spoofing",
+        items: [
+          { flag: "-f", label: "Fragment packets", description: "Fragment packets to evade filters." },
+          { flag: "--mtu", label: "Set MTU", description: "Set custom packet MTU.", requiresValue: true, placeholder: "32" },
+          { flag: "-D", label: "Decoys", description: "Cloak scans with decoy addresses.", requiresValue: true, placeholder: "RND:5,ME" },
+          { flag: "-S", label: "Spoof source IP", description: "Spoof source IP address.", requiresValue: true, placeholder: "10.0.0.5" },
+          { flag: "-e", label: "Interface", description: "Use specific network interface.", requiresValue: true, placeholder: "en0" },
+          { flag: "-g", label: "Source port", description: "Set source port number.", requiresValue: true, placeholder: "53" },
+          { flag: "--source-port", label: "Source port (long)", description: "Set source port number.", requiresValue: true, placeholder: "53" },
+          { flag: "--proxies", label: "Proxy relay", description: "Relay through HTTP/SOCKS4 proxies.", requiresValue: true, placeholder: "socks4://127.0.0.1:9050" },
+          { flag: "--data", label: "Hex payload", description: "Append custom hex payload.", requiresValue: true, placeholder: "0xdeadbeef" },
+          { flag: "--data-string", label: "String payload", description: "Append custom ASCII payload.", requiresValue: true, placeholder: "custompayload" },
+          { flag: "--data-length", label: "Random payload bytes", description: "Append random payload bytes.", requiresValue: true, placeholder: "16" },
+          { flag: "--ip-options", label: "IP options", description: "Set raw IP options.", requiresValue: true, placeholder: "R" },
+          { flag: "--ttl", label: "Set TTL", description: "Set packet TTL value.", requiresValue: true, placeholder: "64" },
+          { flag: "--spoof-mac", label: "Spoof MAC", description: "Spoof MAC address or vendor.", requiresValue: true, placeholder: "Apple" },
+          { flag: "--badsum", label: "Bad checksums", description: "Send packets with bogus checksums." },
+        ],
+      },
+      {
+        name: "Output",
+        items: [
+          { flag: "-oN", label: "Normal output file", description: "Write normal output to file.", requiresValue: true, placeholder: "scan.nmap" },
+          { flag: "-oX", label: "XML output file", description: "Write XML output to file.", requiresValue: true, placeholder: "scan.xml" },
+          { flag: "-oS", label: "Script kiddie output", description: "Write script kiddie output to file.", requiresValue: true, placeholder: "scan.skid" },
+          { flag: "-oG", label: "Grepable output", description: "Write grepable output to file.", requiresValue: true, placeholder: "scan.gnmap" },
+          { flag: "-oA", label: "All output formats", description: "Write major output formats with basename.", requiresValue: true, placeholder: "scan" },
+          { flag: "-v", label: "Verbose", description: "Increase verbosity." },
+          { flag: "-vv", label: "More verbose", description: "Increase verbosity further." },
+          { flag: "-d", label: "Debug", description: "Increase debug level." },
+          { flag: "-dd", label: "More debug", description: "Increase debug level further." },
+          { flag: "--reason", label: "Show reasons", description: "Show why each port state was chosen." },
+          { flag: "--open", label: "Show open only", description: "Show only open or possibly open ports." },
+          { flag: "--packet-trace", label: "Packet trace", description: "Show all packets sent and received." },
+          { flag: "--iflist", label: "Interface list", description: "Print host interfaces and routes." },
+          { flag: "--append-output", label: "Append output", description: "Append to output files." },
+          { flag: "--resume", label: "Resume scan", description: "Resume aborted scan.", requiresValue: true, placeholder: "scan.xml" },
+          { flag: "--noninteractive", label: "Disable keyboard interactions", description: "Disable runtime keyboard interactions." },
+          { flag: "--stylesheet", label: "XML stylesheet", description: "Set stylesheet for XML output.", requiresValue: true, placeholder: "style.xsl" },
+          { flag: "--webxml", label: "Portable XML", description: "Reference portable Nmap XML stylesheet." },
+          { flag: "--no-stylesheet", label: "No stylesheet", description: "Do not attach stylesheet to XML output." },
+        ],
+      },
+      {
+        name: "Miscellaneous",
+        items: [
+          { flag: "-6", label: "IPv6", description: "Enable IPv6 scanning." },
+          { flag: "-A", label: "Aggressive scan", description: "Enable OS, version, script, and traceroute." },
+          { flag: "--datadir", label: "Data directory", description: "Set custom Nmap data directory.", requiresValue: true, placeholder: "/usr/share/nmap" },
+          { flag: "--send-eth", label: "Send ethernet", description: "Send raw ethernet frames." },
+          { flag: "--send-ip", label: "Send IP packets", description: "Send raw IP packets." },
+          { flag: "--privileged", label: "Assume privileged", description: "Assume raw socket privileges." },
+          { flag: "--unprivileged", label: "Assume unprivileged", description: "Assume no raw socket privileges." },
+          { flag: "-V", label: "Version info", description: "Print Nmap version number." },
+          { flag: "-h", label: "Help", description: "Print Nmap help summary." },
+        ],
+      },
+    ];
+
+    const FLAG_INDEX = new Map();
+    const valueInputs = new Map();
+    for (const section of FLAG_SECTIONS) {
+      for (const item of section.items) {
+        FLAG_INDEX.set(item.flag, item);
+      }
+    }
+
+    function parseExtraArgs(input) {
+      // Split custom args while preserving quoted groups.
+      const tokens = input.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+      return tokens.map((item) => item.replace(/^"(.*)"$/, "$1")).filter(Boolean);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function createFlagEntry(item) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "flag-entry";
+
+      const label = document.createElement("label");
+      label.className = "check-item";
+
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.name = "arg_flags";
+      input.value = item.flag;
+
+      const code = document.createElement("code");
+      code.textContent = item.flag;
+
+      label.appendChild(input);
+      label.appendChild(code);
+      label.append(` ${item.label}`);
+      wrapper.appendChild(label);
+
+      if (item.requiresValue) {
+        const valueInput = document.createElement("input");
+        valueInput.type = "text";
+        valueInput.className = "flag-value";
+        valueInput.dataset.flag = item.flag;
+        valueInput.placeholder = item.placeholder || "value";
+        valueInput.hidden = true;
+        wrapper.appendChild(valueInput);
+        valueInputs.set(item.flag, valueInput);
+      }
+
+      return wrapper;
+    }
+
+    function renderFlagLibrary() {
+      const beginnerSet = new Set(BEGINNER_FLAGS);
+
+      for (const beginnerFlag of BEGINNER_FLAGS) {
+        const item = FLAG_INDEX.get(beginnerFlag);
+        if (item) beginnerFlagsNode.appendChild(createFlagEntry(item));
+      }
+
+      for (const section of FLAG_SECTIONS) {
+        const sectionNode = document.createElement("details");
+        sectionNode.className = "flag-section";
+
+        const summary = document.createElement("summary");
+        summary.textContent = section.name;
+        sectionNode.appendChild(summary);
+
+        const grid = document.createElement("div");
+        grid.className = "check-grid";
+
+        const sectionItems = section.items.filter((item) => !beginnerSet.has(item.flag));
+        for (const item of sectionItems) {
+          grid.appendChild(createFlagEntry(item));
+        }
+
+        sectionNode.appendChild(grid);
+        allFlagSectionsNode.appendChild(sectionNode);
+      }
+    }
+
+    function selectedScanType() {
+      return form.querySelector('input[name="scan_type"]:checked')?.value || "tcp";
+    }
+
+    function collectFlagSelections() {
+      const checked = Array.from(form.querySelectorAll('input[name="arg_flags"]:checked'));
+      return checked.map((check) => {
+        const item = FLAG_INDEX.get(check.value);
+        const valueInput = valueInputs.get(check.value);
+        const value = valueInput ? valueInput.value.trim() : "";
+        const missing = Boolean(item?.requiresValue && !value);
+        return { item, value, missing };
+      }).filter((entry) => entry.item);
+    }
+
+    function selectionToTokens(selection, usePlaceholder) {
+      if (!selection.item.requiresValue) return [selection.item.flag];
+      if (selection.missing) {
+        if (!usePlaceholder) return [];
+        return [selection.item.flag, `<${selection.item.placeholder || "value"}>`];
+      }
+      return [selection.item.flag, selection.value];
+    }
+
+    function buildState(usePlaceholder = false) {
+      const selections = collectFlagSelections();
+      const flagTokens = selections.flatMap((selection) => selectionToTokens(selection, usePlaceholder));
+      const customArgs = parseExtraArgs(form.extra_args.value.trim());
+      const extraArgs = [...flagTokens, ...customArgs];
+      return {
+        selections,
+        missing: selections.filter((selection) => selection.missing),
+        payload: {
+          target: form.target.value.trim(),
+          scan_type: selectedScanType(),
+          ports: form.ports.value.trim() || null,
+          use_privileged: Boolean(form.use_privileged.checked),
+          timeout_seconds: 180,
+          extra_args: extraArgs,
+        },
+      };
+    }
+
+    function buildCommandPreview(payload) {
+      const parts = ["nmap"];
+      if (payload.scan_type === "tcp") parts.push("-sT");
+      if (payload.scan_type === "syn") parts.push("-sS");
+      if (payload.scan_type === "version") parts.push("-sV");
+      if (payload.ports) parts.push("-p", payload.ports);
+      if (payload.extra_args?.length) parts.push(...payload.extra_args);
+      parts.push("-oX", "-", payload.target || "<target>");
+      return parts.join(" ");
+    }
+
+    function refreshPreview(state = buildState(true)) {
+      commandChip.textContent = `Command preview: ${buildCommandPreview(state.payload)}`;
+    }
+
+    function renderSelectedFlagDetails(selections) {
+      if (!selections.length) {
+        selectedFlagDetailsNode.innerHTML = `<div class="selected-empty">No flags selected yet.</div>`;
+        return;
+      }
+      selectedFlagDetailsNode.innerHTML = selections.map((selection) => {
+        const valuePart = selection.item.requiresValue ? ` <code>${escapeHtml(selection.value || `<${selection.item.placeholder || "value"}>`)}</code>` : "";
+        return `
+          <div class="selected-flag ${selection.missing ? "missing" : ""}">
+            <div><code>${escapeHtml(selection.item.flag)}</code>${valuePart}</div>
+            <div>${escapeHtml(selection.item.description)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateFlagValueVisibility() {
+      const checks = Array.from(form.querySelectorAll('input[name="arg_flags"]'));
+      for (const check of checks) {
+        const valueInput = valueInputs.get(check.value);
+        if (valueInput) valueInput.hidden = !check.checked;
+      }
+    }
+
+    function refreshFlagUi() {
+      updateFlagValueVisibility();
+      const previewState = buildState(true);
+      refreshPreview(previewState);
+      renderSelectedFlagDetails(previewState.selections);
+    }
+
+    function renderRows(data) {
+      const rows = [];
+      for (const host of data.hosts || []) {
+        const ports = host.ports?.length ? host.ports : [{ port: "-", proto: "-", state: "-", service: "-" }];
+        for (const port of ports) {
+          rows.push(`
+            <tr>
+              <td>${escapeHtml(host.address || "-")}</td>
+              <td>${escapeHtml(port.port || "-")}</td>
+              <td>${escapeHtml(port.proto || "-")}</td>
+              <td>${escapeHtml(port.state || "-")}</td>
+              <td>${escapeHtml(port.service || "-")}</td>
+            </tr>
+          `);
+        }
+      }
+      resultBody.innerHTML = rows.length ? rows.join("") : `<tr><td colspan="5">No hosts returned.</td></tr>`;
+    }
+
+    function textList(values) {
+      return values && values.length ? values.join(", ") : "-";
+    }
+
+    function flattenScriptDetails(nodes, prefix = "") {
+      const lines = [];
+      for (const node of nodes || []) {
+        const labelBits = [prefix, node.tag, node.key].filter(Boolean);
+        const label = labelBits.join("/");
+        if (node.text) lines.push(`${label}: ${node.text}`);
+        if (node.children?.length) {
+          lines.push(...flattenScriptDetails(node.children, label));
+        }
+      }
+      return lines;
+    }
+
+    function summarizeScript(script) {
+      const head = `${script.id || "script"}${script.output ? `: ${script.output}` : ""}`.trim();
+      const detailLines = flattenScriptDetails(script.details || []);
+      if (!detailLines.length) return head;
+      const detailText = detailLines.slice(0, 2).join(" | ");
+      return `${head} [${detailText}]`;
+    }
+
+    function renderMeta(data) {
+      const metadata = data.metadata || {};
+      const runstats = data.runstats || {};
+      const hosts = runstats.hosts || {};
+      const finished = runstats.finished || {};
+      const scaninfo = (metadata.scaninfo || []).map((item) => {
+        return `${item.type || "?"}/${item.protocol || "?"} ${item.services || ""}`.trim();
+      }).filter(Boolean);
+      const items = [
+        ["Scanner", metadata.scanner || "-"],
+        ["Version", metadata.version || "-"],
+        ["Args", metadata.args || "-"],
+        ["Scan Info", textList(scaninfo)],
+        ["Hosts Up", hosts.up || "-"],
+        ["Hosts Down", hosts.down || "-"],
+        ["Hosts Total", hosts.total || "-"],
+        ["Finished Time", finished.timestr || finished.time || "-"],
+        ["Summary", finished.summary || "-"],
+      ];
+      scanMeta.innerHTML = items.map(([label, value]) => `
+        <div class="meta-item ${label === "Scan Info" ? "meta-wide" : ""}">
+          <strong>${escapeHtml(label)}</strong>
+          <span class="meta-value">${escapeHtml(value)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderDetections(data) {
+      const hosts = data.hosts || [];
+      if (!hosts.length) {
+        detectionBody.textContent = "No host detection details.";
+        return;
+      }
+
+      const cards = hosts.map((host, index) => {
+        const hostnames = (host.hostnames || []).map((item) => item.name).filter(Boolean);
+        const addresses = (host.addresses || []).map((item) => `${item.addrtype || "addr"}:${item.addr || "-"}`);
+        const osMatches = (host.os?.matches || []).map((item) => `${item.name || "unknown"} (${item.accuracy || "?"}%)`);
+        const osClasses = (host.os?.classes || []).map((item) => {
+          return [item.vendor, item.osfamily, item.osgen, item.type].filter(Boolean).join(" ");
+        }).filter(Boolean);
+        const osPortsUsed = (host.os?.ports_used || []).map((item) => {
+          return `${item.proto || "?"}/${item.portid || "?"} ${item.state || ""}`.trim();
+        });
+        const hostScripts = (host.hostscripts || []).map((item) => summarizeScript(item));
+        const trace = (host.trace || []).map((hop) => `${hop.ttl || "?"}:${hop.ipaddr || hop.host || "-"}`);
+        const sequenceBits = [];
+        if (host.sequence?.tcp?.difficulty || host.sequence?.tcp?.values) {
+          sequenceBits.push(`tcp:${host.sequence.tcp.difficulty || host.sequence.tcp.values}`);
+        }
+        if (host.sequence?.ipid?.class || host.sequence?.ipid?.values) {
+          sequenceBits.push(`ipid:${host.sequence.ipid.class || host.sequence.ipid.values}`);
+        }
+        if (host.sequence?.tcpts?.class || host.sequence?.tcpts?.values) {
+          sequenceBits.push(`ts:${host.sequence.tcpts.class || host.sequence.tcpts.values}`);
+        }
+
+        const detailedPorts = (host.ports || []).filter((port) => {
+          const hasServiceDetail = port.service_detail && Object.keys(port.service_detail).length > 0;
+          const hasStateDetail = port.state_detail && Object.keys(port.state_detail).length > 0;
+          const hasScripts = port.scripts && port.scripts.length > 0;
+          return hasServiceDetail || hasStateDetail || hasScripts;
+        });
+
+        const portPills = detailedPorts.map((port) => {
+          const serviceBits = [
+            port.service_detail?.name,
+            port.service_detail?.product,
+            port.service_detail?.version,
+            port.service_detail?.extrainfo,
+            (port.service_detail?.cpe || []).join("|"),
+          ].filter(Boolean).join(" ");
+          const stateBits = [
+            port.state_detail?.state,
+            port.state_detail?.reason,
+          ].filter(Boolean).join("/");
+          const scriptBits = (port.scripts || []).map((script) => summarizeScript(script)).filter(Boolean).join(" | ");
+          const text = [
+            serviceBits,
+            stateBits ? `state:${stateBits}` : "",
+            scriptBits ? `scripts:${scriptBits}` : "",
+          ].filter(Boolean).join(" ");
+          return `<span class="pill">${escapeHtml(`${port.proto || "?"}/${port.port || "?"} ${text}`.trim())}</span>`;
+        }).join("");
+
+        return `
+          <div class="host-card">
+            <div class="host-title">Host ${index + 1}: ${escapeHtml(host.address || "unknown")}</div>
+            <div class="mini-row"><strong>Status:</strong> ${escapeHtml(host.status?.state || "-")} (${escapeHtml(host.status?.reason || "-")})</div>
+            <div class="mini-row"><strong>Hostnames:</strong> ${escapeHtml(textList(hostnames))}</div>
+            <div class="mini-row"><strong>Addresses:</strong> ${escapeHtml(textList(addresses))}</div>
+            <div class="mini-row"><strong>OS Matches:</strong> ${escapeHtml(textList(osMatches))}</div>
+            <div class="mini-row"><strong>OS Classes:</strong> ${escapeHtml(textList(osClasses))}</div>
+            <div class="mini-row"><strong>OS Ports Used:</strong> ${escapeHtml(textList(osPortsUsed))}</div>
+            <div class="mini-row"><strong>OS Fingerprint:</strong> ${escapeHtml(host.os?.fingerprint || "-")}</div>
+            <div class="mini-row"><strong>Uptime:</strong> ${escapeHtml(host.uptime?.seconds || "-")}s</div>
+            <div class="mini-row"><strong>Distance:</strong> ${escapeHtml(host.distance?.value || "-")} hops</div>
+            <div class="mini-row"><strong>Timing:</strong> ${escapeHtml(host.times?.srtt || "-")} srtt / ${escapeHtml(host.times?.rttvar || "-")} rttvar / ${escapeHtml(host.times?.to || "-")} timeout</div>
+            <div class="mini-row"><strong>Sequence:</strong> ${escapeHtml(textList(sequenceBits))}</div>
+            <div class="mini-row"><strong>Trace Meta:</strong> ${escapeHtml(`${host.trace_meta?.proto || "-"}:${host.trace_meta?.port || "-"}`)}</div>
+            <div class="mini-row"><strong>Trace:</strong> ${escapeHtml(textList(trace))}</div>
+            <div class="mini-row"><strong>Host Scripts:</strong> ${escapeHtml(textList(hostScripts))}</div>
+            <div class="mini-row"><strong>Extra Ports:</strong> ${escapeHtml((host.extraports || []).map((item) => `${item.count || "?"} ${item.state || "?"}`).join(", ") || "-")}</div>
+            <div class="mini-row"><strong>Detailed Port Fingerprints:</strong></div>
+            <div class="pill-list">${portPills || '<span class="pill">none</span>'}</div>
+          </div>
+        `;
+      });
+
+      detectionBody.innerHTML = cards.join("");
+    }
+
+    function setStatus(message, isError = false) {
+      statusBox.textContent = message;
+      statusBox.classList.toggle("error", isError);
+    }
+
+    function errorDetail(data) {
+      if (!data) return "Scan failed";
+      if (typeof data.detail === "string") return data.detail;
+      if (data.detail?.errors?.length) return data.detail.errors.join("; ");
+      if (data.detail?.stderr) return data.detail.stderr;
+      if (data.detail?.code) return data.detail.code;
+      return "Scan failed";
+    }
+
+    toggleMoreFlagsBtn.addEventListener("click", () => {
+      allFlagsPanel.hidden = !allFlagsPanel.hidden;
+      toggleMoreFlagsBtn.textContent = allFlagsPanel.hidden ? "Others (All Flags)" : "Hide Others";
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const state = buildState(false);
+      refreshPreview(state);
+
+      if (state.missing.length) {
+        setStatus(`Add values for: ${state.missing.map((entry) => entry.item.flag).join(", ")}`, true);
+        renderSelectedFlagDetails(state.selections);
+        return;
+      }
+
+      setStatus("Running scan...");
+      runBtn.disabled = true;
+
+      try {
+        const payload = {
+          ...state.payload,
+          request_id: `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+        };
+        const response = await fetch("/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(errorDetail(data));
+        }
+        renderRows(data);
+        renderMeta(data);
+        renderDetections(data);
+        rawJson.textContent = JSON.stringify(data, null, 2);
+        setStatus("Scan completed.");
+      } catch (error) {
+        setStatus(String(error.message || error), true);
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+
+    clearBtn.addEventListener("click", () => {
+      form.reset();
+      rawJson.textContent = "{}";
+      resultBody.innerHTML = `<tr><td colspan="5">No scan results yet.</td></tr>`;
+      scanMeta.innerHTML = `<div class="meta-item"><strong>Status</strong>Waiting for first scan.</div>`;
+      detectionBody.textContent = "No detection details yet.";
+      setStatus("Ready.");
+      refreshFlagUi();
+    });
+
+    form.addEventListener("input", refreshFlagUi);
+    form.addEventListener("change", refreshFlagUi);
+
+    renderFlagLibrary();
+    refreshFlagUi();
+  </script>
+</body>
+</html>

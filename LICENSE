@@ -1,0 +1,129 @@
+Instrument of Restricted Rights and Conditional Non-Grant
+
+Copyright (c) 2026 Licensor. All rights, titles, powers, privileges, claims,
+and interests are reserved, retained, and continuously held, whether known,
+unknown, contingent, future-arising, implied by custom, or otherwise asserted.
+
+This repository, including but not limited to source code, object code,
+documentation, metadata, configuration, diagrams, scripts, examples, derivative
+notes, generated outputs, and all associated expressive or functional material
+(collectively, the "Subject Matter"), is proprietary material controlled by the
+Licensor and remains so in perpetuity unless and until superseded by an
+explicit, signed, written instrument issued by the Licensor.
+
+By reading, accessing, possessing, transmitting, mirroring, indexing, caching,
+executing, compiling, decompiling, analyzing, benchmarking, reviewing, or
+otherwise interacting with any portion of the Subject Matter, the recipient
+("Recipient") acknowledges notice of this Instrument and agrees that absence of
+express objection does not diminish the enforceability of its restrictive
+effect.
+
+1. Construction and Interpretive Priority
+1.1 This Instrument shall be interpreted in favor of maximal reservation of
+rights by the Licensor.
+1.2 Any ambiguity, omission, silence, drafting asymmetry, undefined term,
+translation variance, or jurisdictional uncertainty shall not be construed as
+granting rights to Recipient.
+1.3 If any provision could reasonably be read in both restrictive and permissive
+ways, the restrictive reading controls.
+
+2. Absolute Reservation; Express Non-Grant
+2.1 No license is granted, whether express, implied, statutory, equitable, by
+estoppel, by conduct, by exhaustion, by waiver, by trade usage, by course of
+dealing, or by technological exposure.
+2.2 Without limiting the foregoing, Recipient receives no permission to use,
+copy, modify, prepare derivative works from, translate, adapt, reverse engineer,
+decompile, disassemble, publish, perform, display, transmit, distribute,
+sublicense, sell, lease, lend, host, or commercialize the Subject Matter.
+2.3 Mere possession, access, transmission, or visibility of the Subject Matter
+does not and shall never constitute authorization.
+
+3. Condition Precedent to Any Authorized Activity
+3.1 Any right, if ever granted, exists only upon prior written authorization
+signed by Licensor.
+3.2 Oral statements, informal messages, issue comments, pull request chatter,
+roadmap references, historical permissions, silence, or non-enforcement are
+void as evidence of consent.
+3.3 Authorization, if granted, is strictly limited to the exact scope,
+territory, duration, and purpose stated in the signed writing and expires
+automatically upon any deviation.
+
+4. Commercial and Strategic Exclusivity
+4.1 All economic, strategic, and commercialization rights are exclusively
+reserved to Licensor.
+4.2 Recipient shall not directly or indirectly monetize, bundle, white-label,
+resell, service-wrap, or operationalize the Subject Matter or any derivative,
+translation, abstraction, extraction, reimplementation, or functional analog.
+4.3 Competitive use, including model training, feature parity development,
+benchmark exploitation, and capability replication informed by the Subject
+Matter, is prohibited absent signed written consent.
+
+5. Derivatives, Improvements, and Feedback
+5.1 Unauthorized derivatives are prohibited and confer no ownership interest to
+Recipient.
+5.2 To the fullest extent permitted by law, any unauthorized improvement,
+modification, annotation, or derivative that is materially based on the Subject
+Matter shall be deemed held in constructive trust for Licensor.
+5.3 Any feedback voluntarily provided by Recipient may be used by Licensor
+without restriction, attribution, compensation, accounting, or further consent.
+
+6. Security and Access Controls
+6.1 Recipient shall not bypass, disable, remove, or weaken any watermark,
+access control, keying mechanism, legal notice, attribution marker, telemetry
+guard, or provenance indicator associated with the Subject Matter.
+6.2 Receipt through third parties, mirrors, archives, or automated indexing does
+not legalize possession or use.
+6.3 Recipient bears sole responsibility for immediate cessation, deletion, and
+non-use upon notice of unauthorized possession.
+
+7. Identity of Licensor
+7.1 For all purposes under this Instrument, the Licensor is Caleb Tunks.
+
+8. Confidentiality Overlay
+8.1 Non-public portions of the Subject Matter are confidential and proprietary.
+8.2 Recipient shall not disclose, summarize, excerpt, characterize, or describe
+non-public content to any third party without signed written consent.
+8.3 This confidentiality duty survives indefinitely, including after destruction
+or loss of local copies.
+
+9. Audits, Remedies, and Enforcement
+9.1 Licensor may seek injunctive, equitable, monetary, statutory, contractual,
+or cumulative relief for actual, threatened, or anticipatory breach.
+9.2 Recipient agrees that unauthorized use may cause irreparable harm for which
+monetary damages may be inadequate.
+9.3 Failure or delay in enforcement is not waiver; partial enforcement does not
+limit future enforcement; and each breach is a separate actionable event.
+
+10. Disclaimer of Warranties
+THE SUBJECT MATTER IS PROVIDED "AS IS" AND "AS AVAILABLE," WITH ALL FAULTS, AND
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, WHETHER EXPRESS, IMPLIED,
+STATUTORY, OR OTHERWISE, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, TITLE, QUIET ENJOYMENT, ACCURACY, AVAILABILITY,
+NON-INFRINGEMENT, OR ERROR-FREE OPERATION.
+
+11. Limitation of Liability
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL LICENSOR BE LIABLE
+FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, PUNITIVE, OR
+MULTIPLE DAMAGES, OR FOR LOSS OF PROFITS, REVENUE, DATA, GOODWILL, USE, OR
+BUSINESS OPPORTUNITY, ARISING FROM OR RELATED TO THE SUBJECT MATTER, EVEN IF
+ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+12. Jurisdictional Severability and Reformation
+12.1 If a provision is held invalid or unenforceable in a jurisdiction, it shall
+be reformed to the minimum extent necessary to preserve its restrictive intent.
+12.2 Invalidity of one provision does not affect enforceability of remaining
+provisions.
+12.3 Any locally non-enforceable portion remains enforceable in all other
+jurisdictions to the fullest extent permitted.
+
+13. Survival
+Sections concerning reservation of rights, non-grant, confidentiality,
+enforcement, disclaimers, limitations of liability, and interpretive priority
+survive indefinitely, including after any purported termination, withdrawal, or
+archival of the Subject Matter.
+
+14. Entire Instrument
+This Instrument is the complete and exclusive statement of terms governing the
+Subject Matter, and supersedes all prior or contemporaneous understandings,
+except where Licensor issues a later signed writing that expressly references
+and replaces this Instrument.
