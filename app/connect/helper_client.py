@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
@@ -7,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from app.scan.request import Request
+
+logger = logging.getLogger("nmap_insight.helper_client")
 
 DEFAULT_HELPER_URL = "http://127.0.0.1:8765"
 HELPER_URL_ENV = "NMAP_HELPER_URL"
@@ -83,6 +86,7 @@ async def _post_json(path: str, payload: dict[str, Any], timeout_seconds: int = 
     except urllib.error.HTTPError as exc:
         raise RuntimeError(_http_error_message(exc)) from exc
     except urllib.error.URLError as exc:
+        logger.warning("Helper not reachable: %s", exc)
         raise RuntimeError("HELPER_NOT_AVAILABLE: helper service is not reachable") from exc
 
 
@@ -98,10 +102,12 @@ def _request_payload(req: Request) -> dict[str, Any]:
 
 
 async def run_privileged_nmap_xml(req: Request) -> str:
+    logger.info("Requesting privileged scan: target=%s", req.target)
     payload = _request_payload(req)
     validation = await _post_json("/validate", payload, timeout_seconds=10)
     if not validation.get("allowed"):
         errors = validation.get("errors") or ["Privileged request was rejected"]
+        logger.error("Privileged scan rejected: %s", errors)
         raise RuntimeError("ELEVATED_FLAG_NOT_ALLOWED: " + "; ".join(errors))
 
     result = await _post_json("/scan", payload, timeout_seconds=req.timeout_seconds + 5)
@@ -114,4 +120,5 @@ async def run_privileged_nmap_xml(req: Request) -> str:
     xml_output = result.get("xml")
     if not isinstance(xml_output, str) or not xml_output.strip():
         raise RuntimeError("Privileged scan returned empty XML")
+    logger.info("Privileged scan completed: target=%s", req.target)
     return xml_output
