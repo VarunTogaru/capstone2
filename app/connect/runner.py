@@ -1,6 +1,9 @@
 import asyncio
+import logging
 import shutil
 from app.scan.request import Request
+
+logger = logging.getLogger("nmap_insight.runner")
 
 SCAN_TYPE_FLAGS = {
     "tcp": ["-sT"],
@@ -28,6 +31,7 @@ async def run_nmap_xml(req: Request) -> str:
         raise RuntimeError("nmap is not installed or not in PATH")
 
     args = build_nmap_args(req)
+    logger.info("Running nmap: %s", " ".join(args))
 
     proc = await asyncio.create_subprocess_exec(
         *args,
@@ -42,9 +46,12 @@ async def run_nmap_xml(req: Request) -> str:
     except asyncio.TimeoutError as exc:
         proc.kill()
         await proc.communicate()
+        logger.warning("Nmap scan timed out after %ds", req.timeout_seconds)
         raise RuntimeError("SCAN_TIMEOUT: scan exceeded timeout") from exc
 
     if proc.returncode != 0:
-        raise RuntimeError(stderr.decode(errors="ignore") or "Nmap failed")
+        stderr_text = stderr.decode(errors="ignore")
+        logger.error("Nmap failed (rc=%d): %s", proc.returncode, stderr_text)
+        raise RuntimeError(stderr_text or "Nmap failed")
 
     return stdout.decode(errors="ignore")

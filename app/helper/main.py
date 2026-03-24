@@ -1,11 +1,14 @@
 import asyncio
 import hmac
+import logging
 import os
 import platform
 import secrets
 import shutil
 import uuid
 from pathlib import Path
+
+logger = logging.getLogger("nmap_insight.helper")
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel
@@ -79,6 +82,7 @@ async def health() -> dict:
 @app.post("/validate", dependencies=[Depends(_require_auth)])
 async def validate(req: Request) -> dict:
     command, errors = _command_for_request(req)
+    logger.info("Validating privileged command: %s", command)
     return {
         "allowed": len(errors) == 0,
         "errors": errors,
@@ -102,6 +106,7 @@ async def scan(req: Request) -> dict:
         )
 
     request_id = req.request_id or f"req_{uuid.uuid4().hex[:12]}"
+    logger.info("Executing privileged scan: request_id=%s command=%s", request_id, command)
     process = await asyncio.create_subprocess_exec(
         *command,
         stdout=asyncio.subprocess.PIPE,
@@ -117,6 +122,7 @@ async def scan(req: Request) -> dict:
     except asyncio.TimeoutError as exc:
         process.kill()
         await process.communicate()
+        logger.warning("Scan timed out: request_id=%s", request_id)
         raise HTTPException(
             status_code=408,
             detail="SCAN_TIMEOUT: privileged scan exceeded timeout",
@@ -164,6 +170,7 @@ async def cancel(payload: CancelRequest) -> dict:
     if process.returncode is None:
         process.kill()
 
+    logger.info("Scan canceled: request_id=%s", payload.request_id)
     return {
         "request_id": payload.request_id,
         "status": "canceled",
