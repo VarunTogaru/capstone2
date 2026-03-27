@@ -370,6 +370,57 @@
       font-size: 0.82rem;
       letter-spacing: 0.02em;
       text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    th:hover {
+      background: #e8f0e6;
+    }
+
+    th .sort-arrow {
+      display: inline-block;
+      width: 14px;
+      text-align: center;
+      font-size: 0.7rem;
+      margin-left: 3px;
+      opacity: 0.45;
+    }
+
+    th.sorted .sort-arrow {
+      opacity: 1;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .filter-bar input {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+    }
+
+    .export-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .export-bar button {
+      background: #eef4ef;
+      color: #244536;
+      border: 1px solid #c6d7c8;
+      font-size: 0.82rem;
+      padding: 7px 14px;
+    }
+
+    .export-bar button:hover {
+      background: #dde9df;
     }
 
     .raw {
@@ -585,23 +636,32 @@
       <article class="panel">
         <h2>Results</h2>
         <p class="section-title">Parsed host/port output</p>
+        <div class="filter-bar">
+          <input id="filter-input" type="text" placeholder="Filter results...">
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Address</th>
-                <th>Port</th>
-                <th>Proto</th>
-                <th>State</th>
-                <th>Service</th>
+                <th data-col="address">Address <span class="sort-arrow"></span></th>
+                <th data-col="hostname">Hostname <span class="sort-arrow"></span></th>
+                <th data-col="port">Port <span class="sort-arrow"></span></th>
+                <th data-col="proto">Proto <span class="sort-arrow"></span></th>
+                <th data-col="state">State <span class="sort-arrow"></span></th>
+                <th data-col="service">Service <span class="sort-arrow"></span></th>
+                <th data-col="os">OS <span class="sort-arrow"></span></th>
               </tr>
             </thead>
             <tbody id="result-body">
               <tr>
-                <td colspan="5">No scan results yet.</td>
+                <td colspan="7">No scan results yet.</td>
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="export-bar">
+          <button type="button" id="export-json-btn">Export JSON</button>
+          <button type="button" id="export-csv-btn">Export CSV</button>
         </div>
 
         <p class="section-title" style="margin-top:12px;">Scan Metadata</p>
@@ -987,24 +1047,156 @@
       renderSelectedFlagDetails(previewState.selections);
     }
 
-    function renderRows(data) {
+    let lastData = null;
+    let sortCol = null;
+    let sortAsc = true;
+
+    function flattenRows(data) {
       const rows = [];
       for (const host of data.hosts || []) {
+        const hostname = host.hostnames?.[0]?.name || "-";
+        const os = host.os?.matches?.[0]?.name || "-";
         const ports = host.ports?.length ? host.ports : [{ port: "-", proto: "-", state: "-", service: "-" }];
         for (const port of ports) {
-          rows.push(`
-            <tr>
-              <td>${escapeHtml(host.address || "-")}</td>
-              <td>${escapeHtml(port.port || "-")}</td>
-              <td>${escapeHtml(port.proto || "-")}</td>
-              <td>${escapeHtml(port.state || "-")}</td>
-              <td>${escapeHtml(port.service || "-")}</td>
-            </tr>
-          `);
+          rows.push({
+            address: host.address || "-",
+            hostname,
+            port: port.port || "-",
+            proto: port.proto || "-",
+            state: port.state || "-",
+            service: port.service || "-",
+            os,
+          });
         }
       }
-      resultBody.innerHTML = rows.length ? rows.join("") : `<tr><td colspan="5">No hosts returned.</td></tr>`;
+      return rows;
     }
+
+    function renderFlatRows(rows) {
+      if (!rows.length) {
+        resultBody.innerHTML = `<tr><td colspan="7">No hosts returned.</td></tr>`;
+        return;
+      }
+      resultBody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${escapeHtml(r.address)}</td>
+          <td>${escapeHtml(r.hostname)}</td>
+          <td>${escapeHtml(r.port)}</td>
+          <td>${escapeHtml(r.proto)}</td>
+          <td>${escapeHtml(r.state)}</td>
+          <td>${escapeHtml(r.service)}</td>
+          <td>${escapeHtml(r.os)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function applySort(rows) {
+      if (!sortCol) return rows;
+      const sorted = [...rows];
+      sorted.sort((a, b) => {
+        let va = a[sortCol] || "";
+        let vb = b[sortCol] || "";
+        if (sortCol === "port") {
+          const na = parseInt(va, 10);
+          const nb = parseInt(vb, 10);
+          if (!isNaN(na) && !isNaN(nb)) return sortAsc ? na - nb : nb - na;
+        }
+        va = va.toLowerCase();
+        vb = vb.toLowerCase();
+        if (va < vb) return sortAsc ? -1 : 1;
+        if (va > vb) return sortAsc ? 1 : -1;
+        return 0;
+      });
+      return sorted;
+    }
+
+    function applyFilter(rows) {
+      const filterInput = document.getElementById("filter-input");
+      const q = (filterInput.value || "").toLowerCase().trim();
+      if (!q) return rows;
+      return rows.filter(r =>
+        Object.values(r).some(v => v.toLowerCase().includes(q))
+      );
+    }
+
+    function refreshTable() {
+      if (!lastData) return;
+      let rows = flattenRows(lastData);
+      rows = applyFilter(rows);
+      rows = applySort(rows);
+      renderFlatRows(rows);
+      updateSortArrows();
+    }
+
+    function updateSortArrows() {
+      document.querySelectorAll("th[data-col]").forEach(th => {
+        const arrow = th.querySelector(".sort-arrow");
+        if (th.dataset.col === sortCol) {
+          th.classList.add("sorted");
+          arrow.textContent = sortAsc ? "\u25B2" : "\u25BC";
+        } else {
+          th.classList.remove("sorted");
+          arrow.textContent = "";
+        }
+      });
+    }
+
+    function renderRows(data) {
+      lastData = data;
+      sortCol = null;
+      sortAsc = true;
+      document.getElementById("filter-input").value = "";
+      refreshTable();
+    }
+
+    // Sort on header click
+    document.querySelectorAll("th[data-col]").forEach(th => {
+      th.addEventListener("click", () => {
+        const col = th.dataset.col;
+        if (sortCol === col) {
+          sortAsc = !sortAsc;
+        } else {
+          sortCol = col;
+          sortAsc = true;
+        }
+        refreshTable();
+      });
+    });
+
+    // Filter on input
+    document.getElementById("filter-input").addEventListener("input", refreshTable);
+
+    // Export JSON
+    document.getElementById("export-json-btn").addEventListener("click", () => {
+      if (!lastData) return;
+      const blob = new Blob([JSON.stringify(lastData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nmap_insight_${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Export CSV
+    document.getElementById("export-csv-btn").addEventListener("click", () => {
+      if (!lastData) return;
+      const rows = flattenRows(lastData);
+      const headers = ["Address", "Hostname", "Port", "Proto", "State", "Service", "OS"];
+      const csvRows = [headers.join(",")];
+      for (const r of rows) {
+        csvRows.push([r.address, r.hostname, r.port, r.proto, r.state, r.service, r.os]
+          .map(v => `"${v.replace(/"/g, '""')}"`)
+          .join(","));
+      }
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nmap_insight_${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
 
     function textList(values) {
       return values && values.length ? values.join(", ") : "-";
@@ -1205,7 +1397,12 @@
     clearBtn.addEventListener("click", () => {
       form.reset();
       rawJson.textContent = "{}";
-      resultBody.innerHTML = `<tr><td colspan="5">No scan results yet.</td></tr>`;
+      lastData = null;
+      sortCol = null;
+      sortAsc = true;
+      document.getElementById("filter-input").value = "";
+      resultBody.innerHTML = `<tr><td colspan="7">No scan results yet.</td></tr>`;
+      updateSortArrows();
       scanMeta.innerHTML = `<div class="meta-item"><strong>Status</strong>Waiting for first scan.</div>`;
       detectionBody.textContent = "No detection details yet.";
       setStatus("Ready.");
