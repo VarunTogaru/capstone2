@@ -13,9 +13,12 @@ logger = logging.getLogger("nmap_insight")
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from app.router import router
+from app.scan.db import init_db
 
 app = FastAPI()
 app.include_router(router)
+
+init_db()
 
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
     BASE_DIR = Path(sys._MEIPASS) / "app"  # For when running PyInstaller

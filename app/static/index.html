@@ -423,6 +423,69 @@
       background: #dde9df;
     }
 
+    .history-list {
+      max-height: 240px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fbf8;
+      padding: 6px;
+    }
+
+    .history-item {
+      border: 1px solid #d7e3d6;
+      border-radius: 8px;
+      background: #fff;
+      padding: 7px 9px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 120ms;
+    }
+
+    .history-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .history-item:hover {
+      background: #eef7f0;
+    }
+
+    .history-item .h-target {
+      font-weight: 700;
+      font-size: 0.84rem;
+    }
+
+    .history-item .h-meta {
+      color: var(--muted);
+      font-size: 0.73rem;
+      margin-top: 2px;
+    }
+
+    .history-badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 1px 7px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .history-badge.completed {
+      background: #d5f1e7;
+      color: #18624b;
+    }
+
+    .history-badge.failed {
+      background: #fdeced;
+      color: #912a2a;
+    }
+
+    .history-badge.running {
+      background: #fff3cd;
+      color: #856404;
+    }
+
     .raw {
       margin-top: 12px;
       border: 1px solid var(--line);
@@ -631,6 +694,9 @@
 
         <div id="status" class="status">Ready.</div>
         <div id="command-chip" class="chip">Command preview: nmap -oX - &lt;target&gt;</div>
+
+        <p class="section-title" style="margin-top:14px;">Scan History</p>
+        <div id="history-list" class="history-list">Loading...</div>
       </article>
 
       <article class="panel">
@@ -1198,6 +1264,58 @@
       URL.revokeObjectURL(url);
     });
 
+    // --- Scan History ---
+    const historyList = document.getElementById("history-list");
+
+    async function loadHistory() {
+      try {
+        const res = await fetch("/scans");
+        const scans = await res.json();
+        if (!scans.length) {
+          historyList.textContent = "No past scans.";
+          return;
+        }
+        historyList.innerHTML = scans.map(s => {
+          const date = s.started_at ? new Date(s.started_at).toLocaleString() : "";
+          return `
+            <div class="history-item" data-scan-id="${escapeHtml(s.id)}">
+              <div class="h-target">${escapeHtml(s.target)}</div>
+              <div class="h-meta">
+                ${escapeHtml(s.scan_type)} &middot; ${escapeHtml(date)}
+                <span class="history-badge ${escapeHtml(s.status)}">${escapeHtml(s.status)}</span>
+              </div>
+            </div>`;
+        }).join("");
+      } catch {
+        historyList.textContent = "Could not load history.";
+      }
+    }
+
+    historyList.addEventListener("click", async (e) => {
+      const item = e.target.closest(".history-item");
+      if (!item) return;
+      const scanId = item.dataset.scanId;
+      try {
+        const res = await fetch(`/scans/${encodeURIComponent(scanId)}`);
+        if (!res.ok) throw new Error("Not found");
+        const record = await res.json();
+        const result = record.result_json;
+        if (result && result.hosts) {
+          renderRows(result);
+          renderMeta(result);
+          renderDetections(result);
+          rawJson.textContent = JSON.stringify(result, null, 2);
+          setStatus(`Loaded scan: ${record.target} (${record.status})`);
+        } else if (result && result.error) {
+          setStatus(`Scan failed: ${result.error}`, true);
+        } else {
+          setStatus("Scan has no results yet.");
+        }
+      } catch {
+        setStatus("Could not load scan.", true);
+      }
+    });
+
     function textList(values) {
       return values && values.length ? values.join(", ") : "-";
     }
@@ -1387,8 +1505,10 @@
         renderDetections(data);
         rawJson.textContent = JSON.stringify(data, null, 2);
         setStatus("Scan completed.");
+        loadHistory();
       } catch (error) {
         setStatus(String(error.message || error), true);
+        loadHistory();
       } finally {
         runBtn.disabled = false;
       }
@@ -1414,6 +1534,7 @@
 
     renderFlagLibrary();
     refreshFlagUi();
+    loadHistory();
   </script>
 </body>
 </html>
