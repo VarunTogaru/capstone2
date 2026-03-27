@@ -1,10 +1,16 @@
 import logging
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from app.scan.request import Request
 from app.connect.dispatcher import run_scan_xml
 from app.connect.parser import parse_nmap_xml
+from app.connect.runner import cancel_scan
 from app.scan.db import save_scan, complete_scan, fail_scan, list_scans, get_scan, generate_id
+
+
+class CancelRequest(BaseModel):
+    request_id: str
 
 logger = logging.getLogger("nmap_insight.router")
 
@@ -33,7 +39,18 @@ async def scan(req: Request):
             raise HTTPException(status_code=503, detail=message)
         if message.startswith("SCAN_TIMEOUT"):
             raise HTTPException(status_code=408, detail=message)
+        if message.startswith("SCAN_CANCELED"):
+            raise HTTPException(status_code=499, detail=message)
         raise HTTPException(status_code=500, detail=message)
+
+
+@router.post("/scan/cancel")
+async def cancel(body: CancelRequest):
+    found = cancel_scan(body.request_id)
+    if not found:
+        raise HTTPException(status_code=404, detail="No running scan with that request_id")
+    logger.info("Scan cancel requested: request_id=%s", body.request_id)
+    return {"status": "canceled", "request_id": body.request_id}
 
 
 @router.get("/scans")

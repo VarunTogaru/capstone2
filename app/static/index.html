@@ -311,6 +311,12 @@
       color: #2f4536;
     }
 
+    .stop {
+      background: var(--warn);
+      color: #fff;
+      flex: 1;
+    }
+
     .status {
       margin: 10px 0 0;
       padding: 10px;
@@ -688,6 +694,7 @@
 
           <div class="actions">
             <button class="run" type="submit" id="run-btn">Run Scan</button>
+            <button class="stop" type="button" id="stop-btn" hidden>Stop Scan</button>
             <button class="clear" type="button" id="clear-btn">Clear</button>
           </div>
         </form>
@@ -1472,6 +1479,10 @@
       toggleMoreFlagsBtn.textContent = allFlagsPanel.hidden ? "Others (All Flags)" : "Hide Others";
     });
 
+    const stopBtn = document.getElementById("stop-btn");
+    let currentAbort = null;
+    let currentRequestId = null;
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const state = buildState(false);
@@ -1483,18 +1494,24 @@
         return;
       }
 
+      const requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      currentRequestId = requestId;
+      currentAbort = new AbortController();
+
       setStatus("Running scan...");
-      runBtn.disabled = true;
+      runBtn.hidden = true;
+      stopBtn.hidden = false;
 
       try {
         const payload = {
           ...state.payload,
-          request_id: `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+          request_id: requestId,
         };
         const response = await fetch("/scan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          signal: currentAbort.signal,
         });
         const data = await response.json();
         if (!response.ok) {
@@ -1507,10 +1524,30 @@
         setStatus("Scan completed.");
         loadHistory();
       } catch (error) {
-        setStatus(String(error.message || error), true);
+        if (error.name === "AbortError") {
+          setStatus("Scan canceled.");
+        } else {
+          setStatus(String(error.message || error), true);
+        }
         loadHistory();
       } finally {
-        runBtn.disabled = false;
+        runBtn.hidden = false;
+        stopBtn.hidden = true;
+        currentAbort = null;
+        currentRequestId = null;
+      }
+    });
+
+    stopBtn.addEventListener("click", async () => {
+      if (currentAbort) currentAbort.abort();
+      if (currentRequestId) {
+        try {
+          await fetch("/scan/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ request_id: currentRequestId }),
+          });
+        } catch { /* best effort */ }
       }
     });
 
